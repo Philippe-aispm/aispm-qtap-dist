@@ -575,12 +575,21 @@ install_python_layer() {
     py_ver_nodot=$(echo "$py_ver_dotted" | tr -d '.')
 
     if [ "$pkg_manager" = "apt" ]; then
-        if DEBIAN_FRONTEND=noninteractive apt-get install -y -qq python3-yaml 2>&1; then
+        if DEBIAN_FRONTEND=noninteractive apt-get install -y -qq python3-yaml 2>&1 && \
+           "$PYTHON_BIN" -c 'import yaml' 2>/dev/null; then
             deps_installed=true
             success "Python dependencies installed via apt"
         fi
     elif [ "$pkg_manager" = "dnf" ] || [ "$pkg_manager" = "yum" ]; then
-        if $pkg_manager install -y python3-pyyaml >/dev/null 2>&1; then
+        # Try versioned package first (python3.11-pyyaml), then generic (python3-pyyaml).
+        # On Amazon Linux 2023, python3-pyyaml installs for system python3 (3.9),
+        # not for python3.11, so we must try the versioned package first.
+        if $pkg_manager install -y "python${py_ver_dotted}-pyyaml" >/dev/null 2>&1 && \
+           "$PYTHON_BIN" -c 'import yaml' 2>/dev/null; then
+            deps_installed=true
+            success "Python dependencies installed via ${pkg_manager} (python${py_ver_dotted}-pyyaml)"
+        elif $pkg_manager install -y python3-pyyaml >/dev/null 2>&1 && \
+             "$PYTHON_BIN" -c 'import yaml' 2>/dev/null; then
             deps_installed=true
             success "Python dependencies installed via ${pkg_manager}"
         fi
