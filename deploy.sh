@@ -38,6 +38,7 @@ INSTALL_DIR=${INSTALL_DIR:-/opt/aispm-qtap}
 PYTHON_FILES_URL=${PYTHON_FILES_URL:-}  # Set this to your deployment tarball URL
 RUN_MODE=${MODE:-service}               # "service" (default) or "interactive"
 QTAP_TOKEN=${TOKEN:-}                   # Qtap registration token
+TENANT_ID=${TENANT_ID:-}               # Tenant identifier for multi-tenant deployments
 
 # ============================================================================
 # Terminal Colors & Formatting
@@ -682,7 +683,7 @@ After=network.target
 Type=simple
 User=root
 WorkingDirectory=${INSTALL_DIR}
-ExecStart=/bin/bash -c 'stdbuf -oL /usr/local/bin/qtap ${svc_qtap_args} 2>&1 | ${PYTHON_BIN} -u ${INSTALL_DIR}/processor.py -c ${INSTALL_DIR}/config/rules.yaml --sni-config ${INSTALL_DIR}/config/sni-classifications.yaml --hostfile ${INSTALL_DIR}/config/host_id.json --unmatched ${INSTALL_DIR}/logs/unmatched.jsonl --log-level INFO --format summary -q 2>${INSTALL_DIR}/logs/debug.log'
+ExecStart=/bin/bash -c 'stdbuf -oL /usr/local/bin/qtap ${svc_qtap_args} 2>&1 | ${PYTHON_BIN} -u ${INSTALL_DIR}/processor.py -c ${INSTALL_DIR}/config/rules.yaml --sni-config ${INSTALL_DIR}/config/sni-classifications.yaml --hostfile ${INSTALL_DIR}/config/host_id.json --unmatched ${INSTALL_DIR}/logs/unmatched.jsonl ${TENANT_ID:+--tenant-id ${TENANT_ID}} --log-level INFO --format summary -q 2>${INSTALL_DIR}/logs/debug.log'
 Restart=always
 RestartSec=10
 StandardOutput=append:${INSTALL_DIR}/logs/output.jsonl
@@ -748,6 +749,7 @@ run_interactive() {
             --sni-config "${INSTALL_DIR}/config/sni-classifications.yaml" \
             --hostfile "${INSTALL_DIR}/config/host_id.json" \
             --unmatched "${INSTALL_DIR}/logs/unmatched.jsonl" \
+            ${TENANT_ID:+--tenant-id "$TENANT_ID"} \
             --log-level INFO --format summary
 
     local exit_code=$?
