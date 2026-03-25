@@ -19,11 +19,11 @@
 #
 # Remote one-liner (installs as systemd service):
 #   curl -fsSL https://raw.githubusercontent.com/Philippe-aispm/aispm-qtap-dist/master/deploy-go.sh | \
-#     sudo AISPM_VERSION=v1.7.2-go TENANT_ID=my-tenant bash
+#     sudo AISPM_VERSION=v1.7.2 TENANT_ID=my-tenant bash
 #
 # Interactive mode (first install — register qtap):
 #   curl -fsSL https://raw.githubusercontent.com/Philippe-aispm/aispm-qtap-dist/master/deploy-go.sh | \
-#     sudo AISPM_VERSION=v1.7.2-go MODE=interactive TOKEN=<token> bash
+#     sudo AISPM_VERSION=v1.7.2 MODE=interactive TOKEN=<token> bash
 #
 # From extracted tarball (offline):
 #   cd aispm-qtap && sudo bash deploy-go.sh
@@ -35,7 +35,7 @@ set -euo pipefail
 # Configuration Variables
 # ============================================================================
 
-AISPM_VERSION=${AISPM_VERSION:-v1.7.2-go}    # AISPM semantic layer version (GitHub release tag)
+AISPM_VERSION=${AISPM_VERSION:-v1.7.2}       # AISPM semantic layer version
 QTAP_VERSION=${VERSION:-latest}
 INSTALL_DIR=${INSTALL_DIR:-/opt/aispm-qtap}
 RUN_MODE=${MODE:-service}                   # "service" (default) or "interactive"
@@ -44,8 +44,9 @@ TENANT_ID=${TENANT_ID:-}                   # Tenant identifier for multi-tenant 
 BINARY_NAME="aispm-qtap-processor"
 
 # GitHub release URL for the Go tarball (override with GO_BINARY_URL if self-hosting)
+# Release tag: go-<version> (e.g., go-v1.7.2) to avoid collision with Python releases
 GITHUB_REPO="Philippe-aispm/aispm-qtap-dist"
-GO_BINARY_URL=${GO_BINARY_URL:-"https://github.com/${GITHUB_REPO}/releases/download/${AISPM_VERSION}/aispm-qtap-go-${AISPM_VERSION}.tar.gz"}
+GO_BINARY_URL=${GO_BINARY_URL:-"https://github.com/${GITHUB_REPO}/releases/download/go-${AISPM_VERSION}/aispm-qtap-go-${AISPM_VERSION}.tar.gz"}
 
 # ============================================================================
 # Terminal Colors & Formatting
