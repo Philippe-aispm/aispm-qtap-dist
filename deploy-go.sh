@@ -19,11 +19,11 @@
 #
 # Remote one-liner (installs as systemd service):
 #   curl -fsSL https://raw.githubusercontent.com/Philippe-aispm/aispm-qtap-dist/master/deploy-go.sh | \
-#     sudo AISPM_VERSION=v1.7.2 TENANT_ID=my-tenant bash
+#     sudo AISPM_VERSION=v1.7.5 TENANT_ID=my-tenant bash
 #
 # Interactive mode (first install — register qtap):
 #   curl -fsSL https://raw.githubusercontent.com/Philippe-aispm/aispm-qtap-dist/master/deploy-go.sh | \
-#     sudo AISPM_VERSION=v1.7.2 MODE=interactive TOKEN=<token> bash
+#     sudo AISPM_VERSION=v1.7.5 MODE=interactive TOKEN=<token> bash
 #
 # From extracted tarball (offline):
 #   cd aispm-qtap && sudo bash deploy-go.sh
@@ -35,7 +35,7 @@ set -euo pipefail
 # Configuration Variables
 # ============================================================================
 
-AISPM_VERSION=${AISPM_VERSION:-v1.7.2}       # AISPM semantic layer version
+AISPM_VERSION=${AISPM_VERSION:-v1.7.5}       # AISPM semantic layer version
 QTAP_VERSION=${VERSION:-latest}
 INSTALL_DIR=${INSTALL_DIR:-/opt/aispm-qtap}
 RUN_MODE=${MODE:-service}                   # "service" (default) or "interactive"
@@ -304,9 +304,31 @@ install_go_processor() {
         local tmpdir
         tmpdir=$(mktemp -d)
 
-        if ! curl -fsSL "$GO_BINARY_URL" | tar -xz -C "$tmpdir"; then
+        # Download tarball to file (for checksum verification)
+        if ! curl -fsSL "$GO_BINARY_URL" -o "$tmpdir/package.tar.gz"; then
             rm -rf "$tmpdir"
             error "Failed to download Go binary from ${GO_BINARY_URL}"
+        fi
+
+        # SHA256 verification (graceful: warn if .sha256 not available)
+        local sha_url="${GO_BINARY_URL}.sha256"
+        if curl -fsSL "$sha_url" -o "$tmpdir/package.sha256" 2>/dev/null; then
+            local expected_hash actual_hash
+            expected_hash=$(awk '{print $1}' "$tmpdir/package.sha256")
+            actual_hash=$(sha256sum "$tmpdir/package.tar.gz" | awk '{print $1}')
+            if [ "$expected_hash" != "$actual_hash" ]; then
+                rm -rf "$tmpdir"
+                error "SHA256 checksum verification FAILED (expected: ${expected_hash}, got: ${actual_hash})"
+            fi
+            success "SHA256 checksum verified"
+        else
+            warn "SHA256 checksum file not available — skipping verification"
+        fi
+
+        # Extract
+        if ! tar -xz -C "$tmpdir" -f "$tmpdir/package.tar.gz"; then
+            rm -rf "$tmpdir"
+            error "Failed to extract Go binary tarball"
         fi
 
         # Find the extracted directory (aispm-qtap/)
